@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกการขายสินค้า Non-Move | Non-Move Sales Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        corporate: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                            600: '#0284c7',
+                            500: '#0ea5e9',
+                            50: '#f0f9ff',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom Scrollbar for Table */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Smooth transitions */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header Section -->
+    <header class="bg-gradient-to-r from-slate-900 via-slate-800 to-sky-900 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-center space-x-3.5">
+                    <div class="bg-sky-500/20 border border-sky-400/30 p-2.5 rounded-xl text-sky-400 shadow-inner">
+                        <i data-lucide="package-check" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                            ระบบบันทึกการขายสินค้า Non-Move
+                        </h1>
+                        <p class="text-xs sm:text-sm text-slate-300 font-light">
+                            ติดตามยอดขายสินค้าค้างสต็อก / เคลื่อนไหวช้า เพื่อบริหารคลังสินค้าอย่างมีประสิทธิภาพ
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 self-start sm:self-center">
+                    <span id="connection-status" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span id="connection-dot" class="w-2 h-2 rounded-full bg-amber-400 mr-2 animate-pulse"></span>
+                        <span id="connection-text">กำลังเชื่อมต่อฐานข้อมูลกลาง...</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+        <!-- Summary Dashboard Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <!-- Total Sales Card -->
+            <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">ยอดขายรวมทั้งหมด (บาท)</p>
+                        <h2 id="stat-total-amount" class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1">฿0.00</h2>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i data-lucide="banknote" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-xs text-slate-500">
+                    <i data-lucide="trending-up" class="w-4 h-4 text-emerald-500 mr-1.5"></i>
+                    <span>คำนวณจากรายการที่แสดงผลปัจจุบัน</span>
+                </div>
+            </div>
+
+            <!-- Total Items Card -->
+            <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">จำนวนรายการที่บันทึก</p>
+                        <div class="flex items-baseline space-x-2 mt-1">
+                            <h2 id="stat-total-count" class="text-2xl sm:text-3xl font-bold text-slate-800">0</h2>
+                            <span class="text-sm text-slate-500">รายการ</span>
+                        </div>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                        <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-xs text-slate-500">
+                    <i data-lucide="layers" class="w-4 h-4 text-sky-500 mr-1.5"></i>
+                    <span id="stat-top-category">สถานะหลัก: -</span>
+                </div>
+            </div>
+
+            <!-- Active Employees Card -->
+            <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">พนักงานที่ร่วมส่งยอด</p>
+                        <div class="flex items-baseline space-x-2 mt-1">
+                            <h2 id="stat-employee-count" class="text-2xl sm:text-3xl font-bold text-indigo-600">0</h2>
+                            <span class="text-sm text-slate-500">ท่าน</span>
+                        </div>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-xs text-slate-500">
+                    <i data-lucide="award" class="w-4 h-4 text-indigo-500 mr-1.5"></i>
+                    <span id="stat-top-employee" class="truncate">ยอดสูงสุด: -</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace: Form & Table -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Left Column: Entry Form (4 cols on lg) -->
+            <section class="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                <div class="bg-slate-50/80 border-b border-slate-200/80 px-5 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="file-plus-2" class="w-5 h-5 text-sky-600"></i>
+                        <h3 id="form-title" class="font-semibold text-slate-800">บันทึกข้อมูลการขายใหม่</h3>
+                    </div>
+                    <span id="edit-badge" class="hidden px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded-full">
+                        โหมดแก้ไข
+                    </span>
+                </div>
+
+                <form id="sales-form" class="p-5 space-y-4">
+                    <input type="hidden" id="edit-id" value="">
+
+                    <!-- Department Selection -->
+                    <div>
+                        <label for="department-select" class="block text-sm font-medium text-slate-700 mb-1">
+                            แผนก <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="building-2" class="w-4 h-4"></i>
+                            </div>
+                            <select id="department-select" required
+                                class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all appearance-none">
+                                <option value="" disabled selected>-- เลือกแผนก --</option>
+                                <option value="ET">ET</option>
+                                <option value="DW - DH">DW - DH</option>
+                                <option value="BM">BM</option>
+                                <option value="HT - PT">HT - PT</option>
+                                <option value="HW - PA">HW - PA</option>
+                                <option value="PB - GD">PB - GD</option>
+                                <option value="BR">BR</option>
+                                <option value="FC">FC</option>
+                                <option value="LT">LT</option>
+                                <option value="TPW">TPW</option>
+                                <option value="BD - FD">BD - FD</option>
+                                <option value="FT - OL">FT - OL</option>
+                                <option value="HO">HO</option>
+                                <option value="MA">MA</option>
+                                <option value="SA">SA</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Name -->
+                    <div>
+                        <label for="employee-name" class="block text-sm font-medium text-slate-700 mb-1">
+                            ชื่อพนักงาน <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                            </div>
+                            <input type="text" id="employee-name" list="employee-history" required
+                                placeholder="ระบุชื่อ-นามสกุล หรือชื่อเล่นพนักงาน"
+                                class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all">
+                            <datalist id="employee-history"></datalist>
+                        </div>
+                    </div>
+
+                    <!-- Product Name / Item -->
+                    <div>
+                        <label for="product-name" class="block text-sm font-medium text-slate-700 mb-1">
+                            รายการสินค้า <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="box" class="w-4 h-4"></i>
+                            </div>
+                            <input type="text" id="product-name" required
+                                placeholder="ระบุชื่อสินค้า, รุ่น หรือรหัสสินค้า"
+                                class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Value / Amount -->
+                    <div>
+                        <label for="sale-value" class="block text-sm font-medium text-slate-700 mb-1">
+                            มูลค่า (บาท) <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 font-medium text-sm">
+                                ฿
+                            </div>
+                            <input type="number" id="sale-value" step="0.01" min="0" required
+                                placeholder="0.00"
+                                class="w-full pl-8 pr-12 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                                THB
+                            </div>
+                        </div>
+                        <p id="formatted-preview" class="text-xs text-emerald-600 mt-1 h-4 font-medium"></p>
+                    </div>
+
+                    <!-- Non-Move Status / Detail -->
+                    <div>
+                        <label for="nonmove-type" class="block text-sm font-medium text-slate-700 mb-1">
+                            รายละเอียด / สถานะ Non-Move <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="tag" class="w-4 h-4"></i>
+                            </div>
+                            <select id="nonmove-type" required
+                                class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all appearance-none">
+                                <option value="nonmove > 90 วัน">nonmove > 90 วัน</option>
+                                <option value="nonmove > 365 วัน">nonmove > 365 วัน</option>
+                                <option value="แบบระบุวันเอง">แบบระบุวันเอง</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Non-Move Days Input (Always visible below status) -->
+                    <div>
+                        <label for="nonmove-days" class="block text-sm font-medium text-slate-700 mb-1">
+                            จำนวนวัน Non-Move <span id="days-required-mark" class="text-rose-500 hidden">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                            </div>
+                            <input type="number" id="nonmove-days" min="1" step="1"
+                                placeholder="ระบุจำนวนวัน เช่น 120, 180, 400 (ถ้ามี)"
+                                class="w-full pl-9 pr-12 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                                วัน
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Evidence Image Upload -->
+                    <div>
+                        <label for="evidence-image" class="block text-sm font-medium text-slate-700 mb-1">
+                            รูปภาพหลักฐานการขาย <span class="text-xs font-normal text-slate-400">(ไม่บังคับ)</span>
+                        </label>
+                        <div id="image-upload-box" class="relative border-2 border-dashed border-slate-300 hover:border-sky-400 bg-slate-50/70 rounded-xl p-3 text-center transition-colors cursor-pointer">
+                            <input type="file" id="evidence-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <div id="image-upload-placeholder" class="py-2 flex flex-col items-center justify-center text-slate-500">
+                                <i data-lucide="image-plus" class="w-6 h-6 text-sky-500 mb-1"></i>
+                                <span class="text-xs font-medium text-slate-700">คลิกเลือกรูปภาพ หรือถ่ายรูปหลักฐาน</span>
+                                <span class="text-[11px] text-slate-400 mt-0.5">ระบบจะย่อขนาดรูปให้อัตโนมัติเพื่อความรวดเร็ว</span>
+                            </div>
+                            <div id="image-preview-wrapper" class="hidden relative z-20">
+                                <img id="image-preview" src="" alt="ตัวอย่างรูปหลักฐาน" class="max-h-36 mx-auto rounded-lg object-contain border border-slate-200 bg-white">
+                                <button type="button" id="remove-image-btn"
+                                    class="mt-2 inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer">
+                                    <i data-lucide="x" class="w-3.5 h-3.5 mr-1"></i>
+                                    ลบรูปภาพนี้
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="pt-2 flex items-center gap-3">
+                        <button type="submit" id="submit-btn"
+                            class="flex-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-medium py-2.5 px-4 rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 cursor-pointer">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            <span id="submit-btn-text">บันทึกข้อมูล</span>
+                        </button>
+                        <button type="button" id="reset-btn"
+                            class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                            title="ล้างค่าในฟอร์ม">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            <span>ล้างค่า</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Right Column: Data Table & Filters (8 cols on lg) -->
+            <section class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col">
+                
+                <!-- Table Header & Export Actions -->
+                <div class="bg-slate-50/80 border-b border-slate-200/80 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="table-2" class="w-5 h-5 text-sky-600"></i>
+                        <h3 class="font-semibold text-slate-800">รายการบันทึกการขาย Non-Move</h3>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" id="export-csv-btn"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium py-2 px-3.5 rounded-xl shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            <span>ส่งออก CSV / Excel</span>
+                        </button>
+                        <button type="button" id="clear-all-btn"
+                            class="bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-xs sm:text-sm font-medium py-2 px-3 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            <span>ล้างทั้งหมด</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search & Filters Bar -->
+                <div class="p-4 border-b border-slate-100 bg-white grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <!-- Search Input -->
+                    <div class="sm:col-span-4 relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </div>
+                        <input type="text" id="search-input"
+                            placeholder="ค้นหาชื่อ, สินค้า, แผนก..."
+                            class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                    </div>
+
+                    <!-- Filter by Department -->
+                    <div class="sm:col-span-2 relative">
+                        <select id="filter-department"
+                            class="w-full pl-3 pr-7 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 appearance-none">
+                            <option value="all">ทุกแผนก</option>
+                            <option value="ET">ET</option>
+                            <option value="DW - DH">DW - DH</option>
+                            <option value="BM">BM</option>
+                            <option value="HT - PT">HT - PT</option>
+                            <option value="HW - PA">HW - PA</option>
+                            <option value="PB - GD">PB - GD</option>
+                            <option value="BR">BR</option>
+                            <option value="FC">FC</option>
+                            <option value="LT">LT</option>
+                            <option value="TPW">TPW</option>
+                            <option value="BD - FD">BD - FD</option>
+                            <option value="FT - OL">FT - OL</option>
+                            <option value="HO">HO</option>
+                            <option value="MA">MA</option>
+                            <option value="SA">SA</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+
+                    <!-- Filter by Employee -->
+                    <div class="sm:col-span-3 relative">
+                        <select id="filter-employee"
+                            class="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 appearance-none">
+                            <option value="all">พนักงานทั้งหมด</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+
+                    <!-- Filter by Non-Move Status -->
+                    <div class="sm:col-span-3 relative">
+                        <select id="filter-nonmove"
+                            class="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 appearance-none">
+                            <option value="all">สถานะ Non-Move ทั้งหมด</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Responsive Data Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/90 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3.5 px-4 text-center w-12">#</th>
+                                <th class="py-3.5 px-4 whitespace-nowrap">วันที่ / เวลา</th>
+                                <th class="py-3.5 px-4 whitespace-nowrap">แผนก</th>
+                                <th class="py-3.5 px-4 whitespace-nowrap">ชื่อพนักงาน</th>
+                                <th class="py-3.5 px-4">รายการสินค้า</th>
+                                <th class="py-3.5 px-4 whitespace-nowrap">สถานะ Non-Move</th>
+                                <th class="py-3.5 px-4 text-center whitespace-nowrap">หลักฐาน</th>
+                                <th class="py-3.5 px-4 text-right whitespace-nowrap">มูลค่า (บาท)</th>
+                                <th class="py-3.5 px-4 text-center whitespace-nowrap w-24">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows injected dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State (Hidden when data exists) -->
+                <div id="empty-state" class="hidden py-12 px-4 text-center">
+                    <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="inbox" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="text-base font-medium text-slate-700">ไม่พบข้อมูลรายการขาย</h4>
+                    <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                        ยังไม่มีข้อมูลการขายสินค้า Non-Move หรือไม่พบรายการที่ตรงกับเงื่อนไขการค้นหาของคุณ
+                    </p>
+                </div>
+
+                <!-- Table Footer Summary -->
+                <div class="bg-slate-50/80 border-t border-slate-200/80 px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500">
+                    <span id="table-showing-text">แสดง 0 รายการ</span>
+                    <span class="flex items-center text-emerald-600 font-medium">
+                        <i data-lucide="cloud-check" class="w-3.5 h-3.5 mr-1.5"></i>
+                        ซิงค์ข้อมูลออนไลน์ร่วมกันแบบ Real-time (ทุกคนเห็นข้อมูลเดียวกัน)
+                    </span>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200/80 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <p>© 2026 ระบบบันทึกการขายสินค้า Non-Move (Non-Move Inventory Sales Management)</p>
+            <p>ออกแบบเพื่อเพิ่มประสิทธิภาพการบริหารจัดการสินค้าคงคลัง</p>
+        </div>
+    </footer>
+
+    <!-- Custom Confirmation Modal (Replaces native confirm()) -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
+            <div class="flex items-center space-x-3 text-rose-600 mb-3">
+                <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+                <h3 id="modal-title" class="text-lg font-bold text-slate-800">ยืนยันการทำรายการ</h3>
+            </div>
+            <p id="modal-message" class="text-sm text-slate-600 leading-relaxed mb-6">
+                คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้? การกระทำนี้ไม่สามารถย้อนกลับได้
+            </p>
+            <div class="flex items-center justify-end space-x-3">
+                <button type="button" id="modal-cancel-btn"
+                    class="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+                    ยกเลิก
+                </button>
+                <button type="button" id="modal-confirm-btn"
+                    class="px-4 py-2 rounded-xl text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition-colors cursor-pointer">
+                    ยืนยันการลบ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div id="image-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm fade-in">
+        <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200">
+            <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="image" class="w-5 h-5 text-sky-600"></i>
+                    <h3 id="image-modal-title" class="font-semibold text-slate-800 text-sm sm:text-base truncate max-w-md">หลักฐานการขาย</h3>
+                </div>
+                <button type="button" id="close-image-modal-btn" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-4 bg-slate-900 flex items-center justify-center max-h-[75vh] overflow-auto">
+                <img id="image-modal-src" src="" alt="หลักฐานการขาย Non-Move" class="max-w-full max-h-[68vh] rounded-lg object-contain">
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <span id="image-modal-meta">รายละเอียด</span>
+                <a id="image-modal-download" href="#" download="evidence.jpg" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5"></i>
+                    บันทึกรูปภาพ
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Application Logic with Real-time Cloud Sync -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration & Initialization
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'nonmove-5fbfa';
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : {
+                apiKey: "AIzaSyBy7q9PIoNsJXhRoOngukF6cobcjVj-0bI",
+                authDomain: "nonmove-5fbfa.firebaseapp.com",
+                projectId: "nonmove-5fbfa",
+                storageBucket: "nonmove-5fbfa.firebasestorage.app",
+                messagingSenderId: "165419376337",
+                appId: "1:165419376337:web:58532375bc6db825b4aff0",
+                measurementId: "G-837M40YC8F"
+            };
+
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let salesCollectionRef = null;
+
+        // State Variables
+        let salesRecords = [];
+        let pendingConfirmAction = null;
+        let isSubmitting = false;
+        let currentEvidenceBase64 = '';
+
+        // DOM Elements
+        const form = document.getElementById('sales-form');
+        const editIdInput = document.getElementById('edit-id');
+        const departmentSelect = document.getElementById('department-select');
+        const employeeInput = document.getElementById('employee-name');
+        const employeeHistoryDatalist = document.getElementById('employee-history');
+        const productInput = document.getElementById('product-name');
+        const valueInput = document.getElementById('sale-value');
+        const formattedPreview = document.getElementById('formatted-preview');
+        const nonMoveSelect = document.getElementById('nonmove-type');
+        const nonMoveDaysInput = document.getElementById('nonmove-days');
+        const daysRequiredMark = document.getElementById('days-required-mark');
+        const evidenceImageInput = document.getElementById('evidence-image');
+        const imageUploadPlaceholder = document.getElementById('image-upload-placeholder');
+        const imagePreviewWrapper = document.getElementById('image-preview-wrapper');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImageBtn = document.getElementById('remove-image-btn');
+        
+        const formTitle = document.getElementById('form-title');
+        const editBadge = document.getElementById('edit-badge');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitBtnText = document.getElementById('submit-btn-text');
+        const resetBtn = document.getElementById('reset-btn');
+
+        const searchInput = document.getElementById('search-input');
+        const filterDepartment = document.getElementById('filter-department');
+        const filterEmployee = document.getElementById('filter-employee');
+        const filterNonMove = document.getElementById('filter-nonmove');
+        const tableBody = document.getElementById('sales-table-body');
+        const emptyState = document.getElementById('empty-state');
+        const tableShowingText = document.getElementById('table-showing-text');
+
+        const statTotalAmount = document.getElementById('stat-total-amount');
+        const statTotalCount = document.getElementById('stat-total-count');
+        const statEmployeeCount = document.getElementById('stat-employee-count');
+        const statTopCategory = document.getElementById('stat-top-category');
+        const statTopEmployee = document.getElementById('stat-top-employee');
+
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+
+        // Connection Status Elements
+        const connectionStatus = document.getElementById('connection-status');
+        const connectionDot = document.getElementById('connection-dot');
+        const connectionText = document.getElementById('connection-text');
+
+        // Modal Elements
+        const confirmModal = document.getElementById('confirm-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+
+        // Image Lightbox Modal Elements
+        const imageModal = document.getElementById('image-modal');
+        const imageModalTitle = document.getElementById('image-modal-title');
+        const imageModalSrc = document.getElementById('image-modal-src');
+        const imageModalMeta = document.getElementById('image-modal-meta');
+        const imageModalDownload = document.getElementById('image-modal-download');
+        const closeImageModalBtn = document.getElementById('close-image-modal-btn');
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            setupEventListeners();
+            await initCloudDatabase();
+        });
+
+        // Update Connection Badge UI
+        function setConnectionStatus(status) {
+            if (status === 'connected') {
+                connectionStatus.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                connectionDot.className = 'w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse';
+                connectionText.textContent = 'ออนไลน์ • ซิงค์ข้อมูลร่วมกัน';
+            } else if (status === 'error') {
+                connectionStatus.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                connectionDot.className = 'w-2 h-2 rounded-full bg-rose-400 mr-2';
+                connectionText.textContent = 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้';
+            }
+        }
+
+        // Initialize Cloud Sync & Auth
+        async function initCloudDatabase() {
+            if (!firebaseConfig) {
+                setConnectionStatus('error');
+                showToast('ไม่พบการตั้งค่าฐานข้อมูลออนไลน์', 'error');
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Authenticate first before any database query
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = cred.user;
+                } else {
+                    const cred = await signInAnonymously(auth);
+                    currentUser = cred.user;
+                }
+
+                // Shared Public Data Path so all users see and edit the exact same dataset
+                salesCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'nonmove_sales');
+
+                // Listen to real-time updates from all users
+                onSnapshot(salesCollectionRef, (snapshot) => {
+                    const records = [];
+                    snapshot.forEach((docSnap) => {
+                        records.push({
+                            id: docSnap.id,
+                            ...docSnap.data()
+                        });
+                    });
+
+                    // Sort newest first in memory
+                    records.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    salesRecords = records;
+
+                    setConnectionStatus('connected');
+                    renderAll();
+                }, (error) => {
+                    console.error('Realtime sync error:', error);
+                    setConnectionStatus('error');
+                    showToast('เกิดข้อผิดพลาดในการซิงค์ข้อมูล: ' + error.message, 'error');
+                });
+
+            } catch (err) {
+                console.error('Initialization error:', err);
+                setConnectionStatus('error');
+                showToast('เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ', 'error');
+            }
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Live number preview while typing value
+            valueInput.addEventListener('input', () => {
+                const val = parseFloat(valueInput.value);
+                if (!isNaN(val) && val >= 0) {
+                    formattedPreview.textContent = `จำนวนเงิน: ${formatCurrency(val)} บาท`;
+                } else {
+                    formattedPreview.textContent = '';
+                }
+            });
+
+            // Require days input if "แบบระบุวันเอง" is selected, optional otherwise
+            nonMoveSelect.addEventListener('change', () => {
+                if (nonMoveSelect.value === 'แบบระบุวันเอง') {
+                    daysRequiredMark.classList.remove('hidden');
+                    nonMoveDaysInput.setAttribute('required', 'required');
+                    nonMoveDaysInput.focus();
+                } else {
+                    daysRequiredMark.classList.add('hidden');
+                    nonMoveDaysInput.removeAttribute('required');
+                }
+            });
+
+            // Handle Image Upload & Auto-Compression
+            evidenceImageInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (!file.type.startsWith('image/')) {
+                    showToast('กรุณาเลือกไฟล์รูปภาพเท่านั้น', 'error');
+                    evidenceImageInput.value = '';
+                    return;
+                }
+
+                try {
+                    const compressedDataUrl = await compressImage(file, 900, 0.72);
+                    currentEvidenceBase64 = compressedDataUrl;
+                    showImagePreview(compressedDataUrl);
+                } catch (err) {
+                    console.error('Image compression error:', err);
+                    showToast('ไม่สามารถประมวลผลรูปภาพได้ กรุณาลองรูปอื่น', 'error');
+                }
+            });
+
+            // Remove selected image
+            removeImageBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                clearImageSelection();
+            });
+
+            // Form Submit (Create or Update)
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await handleFormSubmit();
+            });
+
+            // Reset Form Button
+            resetBtn.addEventListener('click', () => {
+                resetForm();
+                showToast('ล้างข้อมูลในฟอร์มเรียบร้อยแล้ว', 'info');
+            });
+
+            // Search and Filter Listeners
+            searchInput.addEventListener('input', renderAll);
+            filterDepartment.addEventListener('change', renderAll);
+            filterEmployee.addEventListener('change', renderAll);
+            filterNonMove.addEventListener('change', renderAll);
+
+            // Export CSV Button
+            exportCsvBtn.addEventListener('click', exportToCSV);
+
+            // Clear All Button
+            clearAllBtn.addEventListener('click', () => {
+                if (!currentUser || !salesCollectionRef) return;
+                if (salesRecords.length === 0) {
+                    showToast('ไม่มีข้อมูลให้ลบในขณะนี้', 'info');
+                    return;
+                }
+                openConfirmModal(
+                    'ยืนยันการล้างข้อมูลทั้งหมด (มีผลกับทุกคน)',
+                    `คุณต้องการลบรายการขาย Non-Move ทั้งหมดจำนวน ${salesRecords.length} รายการออกจากระบบกลางใช่หรือไม่? ข้อมูลของทุกคนจะถูกลบทั้งหมด`,
+                    async () => {
+                        try {
+                            const snapshot = await getDocs(salesCollectionRef);
+                            const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'nonmove_sales', d.id)));
+                            await Promise.all(deletePromises);
+                            resetForm();
+                            showToast('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว', 'success');
+                        } catch (error) {
+                            console.error('Error clearing all records:', error);
+                            showToast('ไม่สามารถล้างข้อมูลได้ กรุณาลองใหม่', 'error');
+                        }
+                    }
+                );
+            });
+
+            // Modal Buttons
+            modalCancelBtn.addEventListener('click', closeConfirmModal);
+            modalConfirmBtn.addEventListener('click', async () => {
+                if (typeof pendingConfirmAction === 'function') {
+                    await pendingConfirmAction();
+                }
+                closeConfirmModal();
+            });
+            confirmModal.addEventListener('click', (e) => {
+                if (e.target === confirmModal) closeConfirmModal();
+            });
+
+            // Image Lightbox Modal Events
+            closeImageModalBtn.addEventListener('click', closeImageModal);
+            imageModal.addEventListener('click', (e) => {
+                if (e.target === imageModal) closeImageModal();
+            });
+        }
+
+        // Compress Image using Canvas so it fits cleanly within Firestore document limits
+        function compressImage(file, maxDimension = 900, quality = 0.72) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxDimension || height > maxDimension) {
+                            if (width > height) {
+                                height = Math.round((height * maxDimension) / width);
+                                width = maxDimension;
+                            } else {
+                                width = Math.round((width * maxDimension) / height);
+                                height = maxDimension;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        resolve(dataUrl);
+                    };
+                    img.onerror = reject;
+                    img.src = event.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function showImagePreview(dataUrl) {
+            imagePreview.src = dataUrl;
+            imageUploadPlaceholder.classList.add('hidden');
+            imagePreviewWrapper.classList.remove('hidden');
+        }
+
+        function clearImageSelection() {
+            currentEvidenceBase64 = '';
+            evidenceImageInput.value = '';
+            imagePreview.src = '';
+            imagePreviewWrapper.classList.add('hidden');
+            imageUploadPlaceholder.classList.remove('hidden');
+        }
+
+        // Handle Form Submission (Save/Update to Cloud)
+        async function handleFormSubmit() {
+            if (!currentUser || !salesCollectionRef) {
+                showToast('กรุณารอการเชื่อมต่อฐานข้อมูลสักครู่...', 'error');
+                return;
+            }
+            if (isSubmitting) return;
+
+            const department = departmentSelect.value;
+            const employeeName = employeeInput.value.trim();
+            const productName = productInput.value.trim();
+            const value = parseFloat(valueInput.value);
+            const selectedType = nonMoveSelect.value;
+            const daysVal = nonMoveDaysInput.value.trim();
+
+            if (!department) {
+                showToast('กรุณาเลือกแผนก', 'error');
+                departmentSelect.focus();
+                return;
+            }
+
+            if (selectedType === 'แบบระบุวันเอง' && (!daysVal || Number(daysVal) <= 0)) {
+                showToast('กรุณาระบุจำนวนวัน Non-Move', 'error');
+                nonMoveDaysInput.focus();
+                return;
+            }
+
+            let nonMoveStatus = selectedType;
+            if (selectedType === 'แบบระบุวันเอง') {
+                nonMoveStatus = `nonmove > ${daysVal} วัน`;
+            } else if (daysVal && Number(daysVal) > 0) {
+                nonMoveStatus = `${selectedType} (${daysVal} วัน)`;
+            }
+
+            if (!employeeName || !productName || isNaN(value) || value < 0 || !nonMoveStatus) {
+                showToast('กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง', 'error');
+                return;
+            }
+
+            const editId = editIdInput.value;
+            isSubmitting = true;
+            submitBtn.disabled = true;
+            submitBtnText.textContent = editId ? 'กำลังอัปเดต...' : 'กำลังบันทึก...';
+
+            try {
+                if (editId) {
+                    // Update existing document in shared collection
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'nonmove_sales', editId);
+                    await updateDoc(docRef, {
+                        department,
+                        employeeName,
+                        productName,
+                        value,
+                        nonMoveType: selectedType,
+                        nonMoveDays: daysVal ? Number(daysVal) : null,
+                        nonMoveStatus,
+                        evidenceImage: currentEvidenceBase64 || null,
+                        updatedAt: new Date().toISOString()
+                    });
+                    showToast('อัปเดตข้อมูลไปยังระบบกลางเรียบร้อยแล้ว', 'success');
+                } else {
+                    // Add new document to shared collection
+                    await addDoc(salesCollectionRef, {
+                        timestamp: new Date().toISOString(),
+                        department,
+                        employeeName,
+                        productName,
+                        value,
+                        nonMoveType: selectedType,
+                        nonMoveDays: daysVal ? Number(daysVal) : null,
+                        nonMoveStatus,
+                        evidenceImage: currentEvidenceBase64 || null,
+                        createdBy: currentUser.uid
+                    });
+                    showToast('บันทึกข้อมูลสำเร็จ ทุกคนเห็นข้อมูลนี้แล้ว', 'success');
+                }
+
+                // Keep department and employee name in form for faster next entry, clear product & value
+                const savedDepartment = department;
+                const savedEmpName = employeeName;
+                resetForm();
+                departmentSelect.value = savedDepartment;
+                employeeInput.value = savedEmpName;
+            } catch (error) {
+                console.error('Error saving record:', error);
+                showToast('บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+            } finally {
+                isSubmitting = false;
+                submitBtn.disabled = false;
+                submitBtnText.textContent = editIdInput.value ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล';
+            }
+        }
+
+        // Reset Form to Default State
+        function resetForm() {
+            editIdInput.value = '';
+            departmentSelect.value = '';
+            productInput.value = '';
+            valueInput.value = '';
+            formattedPreview.textContent = '';
+            nonMoveSelect.value = 'nonmove > 90 วัน';
+            nonMoveDaysInput.value = '';
+            daysRequiredMark.classList.add('hidden');
+            nonMoveDaysInput.removeAttribute('required');
+            clearImageSelection();
+
+            formTitle.textContent = 'บันทึกข้อมูลการขายใหม่';
+            editBadge.classList.add('hidden');
+            submitBtnText.textContent = 'บันทึกข้อมูล';
+        }
+
+        // Edit Single Record
+        window.editRecord = function(id) {
+            const record = salesRecords.find(item => item.id === id);
+            if (!record) return;
+
+            editIdInput.value = record.id;
+            departmentSelect.value = record.department || '';
+            employeeInput.value = record.employeeName;
+            productInput.value = record.productName;
+            valueInput.value = record.value;
+            formattedPreview.textContent = `จำนวนเงิน: ${formatCurrency(record.value)} บาท`;
+
+            // Restore evidence image if available
+            if (record.evidenceImage) {
+                currentEvidenceBase64 = record.evidenceImage;
+                showImagePreview(record.evidenceImage);
+            } else {
+                clearImageSelection();
+            }
+
+            // Restore status & days fields
+            const standardOptions = Array.from(nonMoveSelect.options).map(opt => opt.value);
+            if (record.nonMoveType && standardOptions.includes(record.nonMoveType)) {
+                nonMoveSelect.value = record.nonMoveType;
+                nonMoveDaysInput.value = record.nonMoveDays || '';
+            } else if (standardOptions.includes(record.nonMoveStatus) && record.nonMoveStatus !== 'แบบระบุวันเอง') {
+                nonMoveSelect.value = record.nonMoveStatus;
+                nonMoveDaysInput.value = record.nonMoveDays || '';
+            } else {
+                nonMoveSelect.value = 'แบบระบุวันเอง';
+                const daysMatch = record.nonMoveStatus.match(/\d+/);
+                nonMoveDaysInput.value = record.nonMoveDays || (daysMatch ? daysMatch[0] : '');
+            }
+
+            if (nonMoveSelect.value === 'แบบระบุวันเอง') {
+                daysRequiredMark.classList.remove('hidden');
+                nonMoveDaysInput.setAttribute('required', 'required');
+            } else {
+                daysRequiredMark.classList.add('hidden');
+                nonMoveDaysInput.removeAttribute('required');
+            }
+
+            // Update Form UI to Edit Mode
+            formTitle.textContent = 'แก้ไขข้อมูลการขาย';
+            editBadge.classList.remove('hidden');
+            submitBtnText.textContent = 'อัปเดตข้อมูล';
+
+            // Scroll smoothly to form on mobile
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        // Open Evidence Image Lightbox
+        window.viewEvidenceImage = function(id) {
+            const record = salesRecords.find(item => item.id === id);
+            if (!record || !record.evidenceImage) return;
+
+            imageModalTitle.textContent = `หลักฐาน: ${record.productName}`;
+            imageModalSrc.src = record.evidenceImage;
+            imageModalMeta.textContent = `ผู้บันทึก: ${record.employeeName} • ${formatThaiDateTime(record.timestamp)}`;
+            imageModalDownload.href = record.evidenceImage;
+            imageModalDownload.download = `หลักฐาน_${record.productName.replace(/[^a-zA-Z0-9ก-๙]/g, '_')}.jpg`;
+
+            imageModal.classList.remove('hidden');
+            imageModal.classList.add('flex');
+        };
+
+        function closeImageModal() {
+            imageModal.classList.add('hidden');
+            imageModal.classList.remove('flex');
+            imageModalSrc.src = '';
+        }
+
+        // Delete Single Record
+        window.deleteRecord = function(id) {
+            if (!currentUser || !salesCollectionRef) return;
+            const record = salesRecords.find(item => item.id === id);
+            if (!record) return;
+
+            openConfirmModal(
+                'ยืนยันการลบรายการ',
+                `ต้องการลบรายการ "${record.productName}" ของพนักงาน "${record.employeeName}" ออกจากระบบกลางใช่หรือไม่?`,
+                async () => {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'nonmove_sales', id));
+                        if (editIdInput.value === id) {
+                            resetForm();
+                        }
+                        showToast('ลบรายการเรียบร้อยแล้ว', 'success');
+                    } catch (error) {
+                        console.error('Error deleting record:', error);
+                        showToast('ไม่สามารถลบรายการได้ กรุณาลองใหม่', 'error');
+                    }
+                }
+            );
+        };
+
+        // Master Render Function
+        function renderAll() {
+            updateDropdownOptions();
+            const filteredData = getFilteredRecords();
+            renderTable(filteredData);
+            updateDashboardStats(filteredData);
+        }
+
+        // Update Datalist & Filter Dropdowns dynamically
+        function updateDropdownOptions() {
+            const uniqueEmployees = [...new Set(salesRecords.map(r => r.employeeName))].sort();
+            const uniqueStatuses = [...new Set(salesRecords.map(r => r.nonMoveStatus))].sort();
+
+            // Update Datalist for Form Autocomplete
+            employeeHistoryDatalist.innerHTML = uniqueEmployees
+                .map(emp => `<option value="${escapeHtml(emp)}">`)
+                .join('');
+
+            // Preserve selected filter values
+            const currentEmpFilter = filterEmployee.value;
+            const currentStatusFilter = filterNonMove.value;
+
+            // Update Employee Filter
+            filterEmployee.innerHTML = `<option value="all">พนักงานทั้งหมด (${uniqueEmployees.length})</option>` +
+                uniqueEmployees.map(emp => `<option value="${escapeHtml(emp)}">${escapeHtml(emp)}</option>`).join('');
+            
+            if (uniqueEmployees.includes(currentEmpFilter)) {
+                filterEmployee.value = currentEmpFilter;
+            }
+
+            // Update Non-Move Filter
+            filterNonMove.innerHTML = `<option value="all">สถานะ Non-Move ทั้งหมด</option>` +
+                uniqueStatuses.map(st => `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join('');
+            
+            if (uniqueStatuses.includes(currentStatusFilter)) {
+                filterNonMove.value = currentStatusFilter;
+            }
+        }
+
+        // Get Filtered Records
+        function getFilteredRecords() {
+            const query = searchInput.value.trim().toLowerCase();
+            const deptFilter = filterDepartment.value;
+            const empFilter = filterEmployee.value;
+            const statusFilter = filterNonMove.value;
+
+            return salesRecords.filter(record => {
+                const deptText = (record.department || '').toLowerCase();
+                const matchesQuery = !query || 
+                    deptText.includes(query) ||
+                    record.employeeName.toLowerCase().includes(query) ||
+                    record.productName.toLowerCase().includes(query) ||
+                    record.nonMoveStatus.toLowerCase().includes(query);
+
+                const matchesDept = deptFilter === 'all' || record.department === deptFilter;
+                const matchesEmp = empFilter === 'all' || record.employeeName === empFilter;
+                const matchesStatus = statusFilter === 'all' || record.nonMoveStatus === statusFilter;
+
+                return matchesQuery && matchesDept && matchesEmp && matchesStatus;
+            });
+        }
+
+        // Render Data Table
+        function renderTable(records) {
+            tableShowingText.textContent = `แสดง ${records.length} จากทั้งหมด ${salesRecords.length} รายการ`;
+
+            if (records.length === 0) {
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            tableBody.innerHTML = records.map((record, index) => {
+                const badgeStyle = getStatusBadgeStyle(record.nonMoveStatus);
+                const deptBadge = record.department
+                    ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">${escapeHtml(record.department)}</span>`
+                    : `<span class="text-xs text-slate-400">-</span>`;
+                const evidenceCell = record.evidenceImage
+                    ? `<button type="button" onclick="viewEvidenceImage('${record.id}')"
+                            class="inline-flex items-center space-x-1 px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-medium transition-colors cursor-pointer"
+                            title="คลิกเพื่อดูรูปหลักฐาน">
+                            <img src="${record.evidenceImage}" alt="หลักฐาน" class="w-5 h-5 rounded object-cover border border-sky-300">
+                            <span>ดูรูป</span>
+                       </button>`
+                    : `<span class="text-xs text-slate-300">-</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50/90 transition-colors group">
+                        <td class="py-3.5 px-4 text-center text-slate-400 font-medium">${index + 1}</td>
+                        <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500">
+                            ${formatThaiDateTime(record.timestamp)}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            ${deptBadge}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-7 h-7 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                    ${escapeHtml(record.employeeName.charAt(0))}
+                                </div>
+                                <span class="font-medium text-slate-800">${escapeHtml(record.employeeName)}</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-700 min-w-[200px]">
+                            ${escapeHtml(record.productName)}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${badgeStyle}">
+                                ${escapeHtml(record.nonMoveStatus)}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            ${evidenceCell}
+                        </td>
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap font-semibold text-emerald-600">
+                            ฿${formatCurrency(record.value)}
+                        </td>
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div class="flex items-center justify-center space-x-1">
+                                <button type="button" onclick="editRecord('${record.id}')"
+                                    class="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+                                    title="แก้ไขรายการ">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button type="button" onclick="deleteRecord('${record.id}')"
+                                    class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                    title="ลบรายการ">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Re-initialize Lucide icons for newly injected rows
+            lucide.createIcons();
+        }
+
+        // Update Summary Dashboard Cards
+        function updateDashboardStats(records) {
+            const totalAmount = records.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+            const totalCount = records.length;
+
+            // Group by Employee
+            const empTotals = {};
+            const statusCounts = {};
+
+            records.forEach(item => {
+                empTotals[item.employeeName] = (empTotals[item.employeeName] || 0) + (Number(item.value) || 0);
+                statusCounts[item.nonMoveStatus] = (statusCounts[item.nonMoveStatus] || 0) + 1;
+            });
+
+            const uniqueEmpCount = Object.keys(empTotals).length;
+
+            // Find top employee by sales amount
+            let topEmpText = 'ยอดสูงสุด: -';
+            if (uniqueEmpCount > 0) {
+                const topEmp = Object.entries(empTotals).sort((a, b) => b[1] - a[1])[0];
+                topEmpText = `ยอดสูงสุด: ${topEmp[0]} (฿${formatCurrency(topEmp[1])})`;
+            }
+
+            // Find most frequent Non-Move status
+            let topStatusText = 'สถานะหลัก: -';
+            if (Object.keys(statusCounts).length > 0) {
+                const topStatus = Object.entries(statusCounts).sort((a, b) => b[1] - a[1])[0];
+                topStatusText = `ส่วนใหญ่: ${topStatus[0]} (${topStatus[1]} รายการ)`;
+            }
+
+            statTotalAmount.textContent = `฿${formatCurrency(totalAmount)}`;
+            statTotalCount.textContent = totalCount.toLocaleString('th-TH');
+            statEmployeeCount.textContent = uniqueEmpCount.toLocaleString('th-TH');
+            statTopEmployee.textContent = topEmpText;
+            statTopCategory.textContent = topStatusText;
+        }
+
+        // Export Data to CSV with UTF-8 BOM (Excel Thai Compatible)
+        function exportToCSV() {
+            const recordsToExport = getFilteredRecords();
+
+            if (recordsToExport.length === 0) {
+                showToast('ไม่มีข้อมูลสำหรับส่งออกไฟล์ CSV', 'error');
+                return;
+            }
+
+            // CSV Headers
+            const headers = [
+                'ลำดับ',
+                'วันที่และเวลาบันทึก',
+                'แผนก',
+                'ชื่อพนักงาน',
+                'รายการสินค้า',
+                'รายละเอียด/สถานะ Non-Move',
+                'หลักฐานรูปภาพ',
+                'มูลค่า (บาท)'
+            ];
+
+            // Format Rows
+            const csvRows = [
+                headers.join(','),
+                ...recordsToExport.map((rec, idx) => {
+                    const row = [
+                        idx + 1,
+                        `"${formatThaiDateTime(rec.timestamp)}"`,
+                        `"${(rec.department || '-').replace(/"/g, '""')}"`,
+                        `"${rec.employeeName.replace(/"/g, '""')}"`,
+                        `"${rec.productName.replace(/"/g, '""')}"`,
+                        `"${rec.nonMoveStatus.replace(/"/g, '""')}"`,
+                        `"${rec.evidenceImage ? 'มีรูปหลักฐาน' : 'ไม่มี'}"`,
+                        rec.value.toFixed(2)
+                    ];
+                    return row.join(',');
+                })
+            ];
+
+            // Add Summary Row at bottom
+            const totalSum = recordsToExport.reduce((sum, r) => sum + r.value, 0);
+            csvRows.push(`"","","","","","","ยอดรวมทั้งหมด",${totalSum.toFixed(2)}`);
+            const csvString = '\uFEFF' + csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `รายงานการขาย_NonMove_${dateStr}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast(`ส่งออกข้อมูล ${recordsToExport.length} รายการเป็นไฟล์ CSV สำเร็จ`, 'success');
+        }
+
+        // Helper: Badge Styling based on Non-Move Status
+        function getStatusBadgeStyle(status) {
+            if (status.includes('365')) {
+                return 'bg-rose-50 text-rose-700 border-rose-200';
+            } else if (status.includes('90')) {
+                return 'bg-amber-50 text-amber-700 border-amber-200';
+            }
+            return 'bg-sky-50 text-sky-700 border-sky-200';
+        }
+
+        // Helper: Format Currency
+        function formatCurrency(num) {
+            return Number(num).toLocaleString('th-TH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Helper: Format Thai Date & Time
+        function formatThaiDateTime(isoString) {
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) return '-';
+            return date.toLocaleDateString('th-TH', {
+                day: '2-digit',
+                month: 'short',
+                year: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) + ' น.';
+        }
+
+        // Helper: Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Modal Controls
+        function openConfirmModal(title, message, onConfirm) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            pendingConfirmAction = onConfirm;
+            confirmModal.classList.remove('hidden');
+            confirmModal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            confirmModal.classList.add('hidden');
+            confirmModal.classList.remove('flex');
+            pendingConfirmAction = null;
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-800 text-white';
+            let iconName = 'check-circle-2';
+            let iconColor = 'text-emerald-400';
+
+            if (type === 'error') {
+                bgClass = 'bg-rose-600 text-white';
+                iconName = 'alert-circle';
+                iconColor = 'text-white';
+            } else if (type === 'info') {
+                bgClass = 'bg-sky-700 text-white';
+                iconName = 'info';
+                iconColor = 'text-sky-200';
+            }
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg flex items-center space-x-2.5 text-sm font-medium pointer-events-auto fade-in max-w-sm`;
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-5 h-5 ${iconColor} flex-shrink-0"></i>
+                <span>${escapeHtml(message)}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
